@@ -1,0 +1,7 @@
+numpy
+gym==0.21
+pyglet
+networkx
+
+[test]
+pytest
