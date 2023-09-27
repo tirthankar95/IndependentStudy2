@@ -1,5 +1,4 @@
 gym==0.21
-networkx
 numpy
 pyglet
 

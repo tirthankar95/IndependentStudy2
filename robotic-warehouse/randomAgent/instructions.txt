@@ -1,0 +1,27 @@
+1.
+conda create --name IS2 python=3.8
+conda activate IS2
+
+2.
+TL;DR Downgrade your setuptools==65.5.0 and wheel<0.40.0
+!pip install setuptools==65.5.0 "wheel<0.40.0"
+Details:
+The issue here seems to be related to wheel (0.40.0+) and setuptools (66.0.0+) that is now reporting a version string in gym==0.21.0's setup file as no longer valid. The following traceback comes from building wheel for Gym as reported in Github #3202 for gym
+...
+wheel.vendored.packaging.requirements.InvalidRequirement: Expected end or semicolon (after version specifier)
+opencv-python>=3.
+which refers to opencv-python>=3. string in the setup.py. It would appear that newer versions of wheel is raising errors here.
+One workaround that you can find in Github issue #3211 is to downgrade the versions of setuptools and wheel, as in:
+
+!pip install setuptools==65.5.0 "wheel<0.40.0"
+
+After restarting the kernel, you should be able to run:
+
+!pip install gym==0.21.0
+
+3.
+pip install six
+
+4.
+Run for graphics.
+conda install -c conda-forge libstdcxx-ng 

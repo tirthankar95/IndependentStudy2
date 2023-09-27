@@ -1,0 +1,1 @@
+sudo docker run -v $(pwd):/IndependentStudy2 is2 &
