@@ -9,7 +9,7 @@ LOG = logging.getLogger(__name__)
 logging.basicConfig()
 LOG.setLevel(logging.INFO)
 
-render_env= True 
+render_env= False 
 num_actions, num_agents = 5, 2 
 env = gym.make("rware-tiny-2ag-v1")#gym.make(f"rware-tiny-{num_agents}ag-v1")
 episodes, episode_length = 1, 10 

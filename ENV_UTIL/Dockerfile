@@ -7,10 +7,7 @@ RUN pip3 install matplotlib
 RUN pip3 install seaborn
 RUN pip3 install torch
 
-RUN cd lb-foraging
-RUN pip3 install -e . 
-
-RUN cd ../robotic-warehouse
-RUN pip3 install -e . 
-
-RUN cd ..
+RUN apt-get install -y git
+RUN pip3 install gym==0.21
+RUN pip3 install pyglet 
+RUN pip3 install networkx
