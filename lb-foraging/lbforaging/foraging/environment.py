@@ -6,7 +6,7 @@ from gym import Env
 import gym
 from gym.utils import seeding
 import numpy as np
-
+__DBG__ = False 
 
 class Action(Enum):
     NONE = 0
@@ -193,7 +193,7 @@ class ForagingEnv(Env):
     @property
     def game_over(self):
         return self._game_over
-
+    # Generate valid moves for each player.
     def _gen_valid_moves(self):
         self._valid_actions = {
             player: [
@@ -217,7 +217,8 @@ class ForagingEnv(Env):
                 row, max(col - distance, 0) : min(col + distance + 1, self.cols)
             ].sum()
         )
-
+    # Before an agent picks up food it checks whether 
+    # there is food in adjacent grids.
     def adjacent_food(self, row, col):
         return (
             self.field[max(row - 1, 0), col]
@@ -235,7 +236,8 @@ class ForagingEnv(Env):
             return row, col - 1
         elif col < self.cols - 1 and self.field[row, col + 1] > 0:
             return row, col + 1
-
+    
+    # Check if there are some players around row and col.
     def adjacent_players(self, row, col):
         return [
             player
@@ -245,7 +247,7 @@ class ForagingEnv(Env):
             or abs(player.position[1] - col) == 1
             and player.position[0] == row
         ]
-
+    # Spwan food which the bottom three palyers can lift.
     def spawn_food(self, max_food, max_level):
         food_count = 0
         attempts = 0
@@ -271,6 +273,8 @@ class ForagingEnv(Env):
                 # ! consistency with prior LBF versions
                 else self.np_random.randint(min_level, max_level)
             )
+            if __DBG__:
+                print(f'Food: {self.field[row, col]}')
             food_count += 1
         self._food_spawned = self.field.sum()
 
@@ -332,11 +336,12 @@ class ForagingEnv(Env):
 
     def _transform_to_neighborhood(self, center, sight, position):
         return (
-            position[0] - center[0] + min(sight, center[0]),
-            position[1] - center[1] + min(sight, center[1]),
+            position[0] - center[0] + sight,
+            position[1] - center[1] + sight,
         )
 
     def get_valid_actions(self) -> list:
+        # Cartesian product 
         return list(product(*[self._valid_actions[player] for player in self.players]))
 
     def _make_obs(self, player):
@@ -373,7 +378,7 @@ class ForagingEnv(Env):
             game_over=self.game_over,
             sight=self.sight,
             current_step=self.current_step,
-        )
+        )                       
 
     def _make_gym_obs(self):
         def make_obs_array(observation):
@@ -453,7 +458,7 @@ class ForagingEnv(Env):
             layers = make_global_grid_arrays()
             agents_bounds = [get_agent_grid_bounds(*player.position) for player in self.players]
             nobs = tuple([layers[:, start_x:end_x, start_y:end_y] for start_x, end_x, start_y, end_y in agents_bounds])
-        else:
+        else: # This is what is hit.
             nobs = tuple([make_obs_array(obs) for obs in observations])
         nreward = [get_player_reward(obs) for obs in observations]
         ndone = [obs.game_over for obs in observations]
@@ -464,16 +469,36 @@ class ForagingEnv(Env):
         for i, obs in  enumerate(nobs):
             assert self.observation_space[i].contains(obs), \
                 f"obs space error: obs: {obs}, obs_space: {self.observation_space[i]}"
-        
+        if __DBG__:
+            self.printMap()
         return nobs, nreward, ndone, ninfo
+
+    def printMap(self):
+        r, c = self.field.shape
+        full_field = [[ '' for _ in range(c) ] for __ in range(r)]
+        for r_idx in range(r):
+            for c_idx in range(c):
+                full_field[r_idx][c_idx] = '0' if self.field[r_idx, c_idx] == 0 \
+                                            else 'f'+str(self.field[r_idx, c_idx])
+        for p_id, player in enumerate(self.players):
+            pr, pc = player.position[0], player.position[1]
+            full_field[pr][pc] = 'p_' + str(p_id) + '_' + str(player.level)                                   
+        
+        for row in full_field:
+            for col in row:
+                print(col, end='\t')
+            print()
+        print()
+
+        return full_field
 
     def reset(self):
         self.field = np.zeros(self.field_size, np.int32)
         self.spawn_players(self.max_player_level)
         player_levels = sorted([player.level for player in self.players])
-
+        # I dont want to spwan a food which the bottom 3 players combined can't lift.
         self.spawn_food(
-            self.max_food, max_level=sum(player_levels[:3])
+            self.max_food, max_level=sum(player_levels[:3]) 
         )
         self.current_step = 0
         self._game_over = False
@@ -492,7 +517,7 @@ class ForagingEnv(Env):
             Action(a) if Action(a) in self._valid_actions[p] else Action.NONE
             for p, a in zip(self.players, actions)
         ]
-
+        
         # check if actions are valid
         for i, (player, action) in enumerate(zip(self.players, actions)):
             if action not in self._valid_actions[player]:
@@ -510,6 +535,9 @@ class ForagingEnv(Env):
         collisions = defaultdict(list)
 
         # so check for collisions
+        if __DBG__:
+            for pid, player in enumerate(self.players):
+                print(f'Before_{pid} {player.position} {actions}')
         for player, action in zip(self.players, actions):
             if action == Action.NONE:
                 collisions[player.position].append(player)
@@ -524,13 +552,16 @@ class ForagingEnv(Env):
             elif action == Action.LOAD:
                 collisions[player.position].append(player)
                 loading_players.add(player)
-
+        
         # and do movements for non colliding players
 
         for k, v in collisions.items():
             if len(v) > 1:  # make sure no more than an player will arrive at location
                 continue
             v[0].position = k
+        if __DBG__:
+            for pid, player in enumerate(self.players):
+                print(f'After_{pid} {player.position}')
 
         # finally process the loadings:
         while loading_players:
@@ -571,19 +602,16 @@ class ForagingEnv(Env):
 
         for p in self.players:
             p.score += p.reward
-
         return self._make_gym_obs()
 
     def _init_render(self):
         from .rendering import Viewer
-
         self.viewer = Viewer((self.rows, self.cols))
         self._rendering_initialized = True
 
     def render(self, mode="human"):
         if not self._rendering_initialized:
             self._init_render()
-
         return self.viewer.render(self, return_rgb_array=mode == "rgb_array")
 
     def close(self):
