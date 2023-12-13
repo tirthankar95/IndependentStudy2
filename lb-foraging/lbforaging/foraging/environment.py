@@ -255,8 +255,8 @@ class ForagingEnv(Env):
 
         while food_count < max_food and attempts < 1000:
             attempts += 1
-            row = self.np_random.randint(1, self.rows - 1)
-            col = self.np_random.randint(1, self.cols - 1)
+            row = self.np_random.integers(1, self.rows - 1)
+            col = self.np_random.integers(1, self.cols - 1)
 
             # check if it has neighbors:
             if (
@@ -271,7 +271,7 @@ class ForagingEnv(Env):
                 if min_level == max_level
                 # ! this is excluding food of level `max_level` but is kept for
                 # ! consistency with prior LBF versions
-                else self.np_random.randint(min_level, max_level)
+                else self.np_random.integers(min_level, max_level)
             )
             if __DBG__:
                 print(f'Food: {self.field[row, col]}')
@@ -294,12 +294,12 @@ class ForagingEnv(Env):
             player.reward = 0
 
             while attempts < 1000:
-                row = self.np_random.randint(0, self.rows)
-                col = self.np_random.randint(0, self.cols)
+                row = self.np_random.integers(0, self.rows)
+                col = self.np_random.integers(0, self.cols)
                 if self._is_empty_location(row, col):
                     player.setup(
                         (row, col),
-                        self.np_random.randint(1, max_player_level + 1),
+                        self.np_random.integers(1, max_player_level + 1),
                         self.field_size,
                     )
                     break
@@ -505,7 +505,7 @@ class ForagingEnv(Env):
         self._gen_valid_moves()
 
         nobs, _, _, _ = self._make_gym_obs()
-        return nobs
+        return nobs, _
 
     def step(self, actions):
         self.current_step += 1

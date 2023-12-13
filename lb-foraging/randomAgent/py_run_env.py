@@ -40,7 +40,7 @@ for episode in range(episodes):
         if render_env:
             env.render()
             time.sleep(1)
-        action = [random.randint(0, num_actions-1) for __ in range(num_agents)]
+        action = [random.integers(0, num_actions-1) for __ in range(num_agents)]
         obs, reward, done, info = env.step(action)
         LOG.info(f'Action[{action}] Reward[{reward}] Obs[{obs}]')
         env.printMap()
