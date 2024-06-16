@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import gym 
 import sys 
 sys.path.append('../')
@@ -258,7 +259,7 @@ class ParticleFilter:
         match = 0
         for idx in range(xn.shape[0]):
             if idx % 3 == 2 and xn[idx] != un[idx]: return self.epsilon
-            match += 1/(1 + abs(xn[idx] - un[idx])) # Coordinates.
+            match += 1/(math.sqrt(1 + (xn[idx] - un[idx])**2)) # Coordinates.
         return match
  
     def normalize(self, logits):
@@ -380,7 +381,7 @@ def test_particle_filter_maintain_state():
                     temp_list = state[_][__].split('_')
                     indx, lvl = map(int, temp_list[1:])
                     state[_][__] = lvl * num_agents + indx 
-    obs = env.reset()
+    obs, info = env.reset()
     actual_state = env.printMap()
     convToState(actual_state)
     pf = ParticleFilter(obs, [State(obs, actual_state, override = True)], J = 1000)
@@ -388,7 +389,7 @@ def test_particle_filter_maintain_state():
     LOG.debug(f'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx')
     test_episode_length = 10
     for _ in range(test_episode_length):
-            action = [random.integers(0, num_actions-1) for __ in range(num_agents)]
+            action = [random.randint(0, num_actions-1) for __ in range(num_agents)]
             LOG.debug(f'Action[{action}]-------------------')
             ### action = USE NN to get action pf.X
             obs, reward, done, info = env.step(action)
@@ -400,5 +401,5 @@ def test_particle_filter_maintain_state():
             if sum(done) == num_agents: break 
 
 if __name__ == '__main__':
-    test_particle_filter_env()
-    #test_particle_filter_maintain_state()
+    #test_particle_filter_env()
+    test_particle_filter_maintain_state()
