@@ -20,6 +20,8 @@ class GridWorld:
     def __init__(self, n = 4) -> None:
         self.grid_size = n
         self.matrix = [[GridElemetns.EMPTY for _ in range(self.grid_size)] for __  in range(self.grid_size)]
+        self.step_cnt = 0
+        self.mx_step = n * 100
     def addElement(self, x: int, y: int, type: GridElemetns):
         self.matrix[x][y] = type 
         if type == GridElemetns.AGENT:
@@ -34,7 +36,9 @@ class GridWorld:
         return s 
     def step(self, action: Action):
         prevX, prevY = self.ax, self.ay 
-        reward, terminated = 0, False 
+        reward, terminated, truncated = 0, False, False 
+        self.step_cnt += 1;
+        if self.step_cnt >= self.mx_step: truncated = True
         if action == Action.UP:
             self.ax = min(self.ax + 1, self.grid_size - 1)
         elif action == Action.DOWN:
@@ -51,7 +55,8 @@ class GridWorld:
         else:
             self.matrix[prevX][prevY] = GridElemetns.EMPTY
             self.matrix[self.ax][self.ay] = GridElemetns.AGENT
-        return self.matrix, reward, terminated
+        if truncated: reward = -1
+        return self.matrix, reward, terminated, truncated
         
 
 class GridWorldBuilder:
@@ -75,17 +80,16 @@ if __name__ == '__main__':
     gB = GridWorldBuilder()
     episodes = 1
     np.random.seed(int(time.time()))
-    print([Action(i) for i in range(4)])
     for _ in range(episodes):
         obs = gB.reset(n = 4)
         total_reward = 0
         print(str(gB), 0)
         while True:
             action = Action(np.random.randint(Action.MX_ACTION.value))
-            obs, reward, terminated = gB.step(action)
+            obs, reward, terminated, truncated = gB.step(action)
             print(f'Action {action.value}\n')
             print(str(gB), reward)
             total_reward += 1
-            if terminated:
+            if terminated or truncated:
                 print(f'Episode[{_}] -> {1/total_reward}')
                 break 
